@@ -56,12 +56,4 @@ export class User extends Model<User> {
     defaultValue: false,
   })
   otp_verified: boolean;
-
-  @BeforeCreate
-  @BeforeUpdate
-  static async hashPassword(user: User) {
-    if (user.password) {
-      user.password = await bcrypt.hash(user.password, 10);
-    }
-  }
 }
