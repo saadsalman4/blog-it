@@ -6,6 +6,7 @@ import { ApiTokenController } from './api-token.controller';
 
 @Module({
   imports: [SequelizeModule.forFeature([ApiToken])], // Register the ApiToken model
+  exports: [SequelizeModule],
   providers: [ApiTokenService],
   controllers: [ApiTokenController],
 })
