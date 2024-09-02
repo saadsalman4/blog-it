@@ -5,6 +5,7 @@ import {
   BadRequestException,
   UnauthorizedException,
   HttpStatus,
+  HttpException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from './user.model';
@@ -14,6 +15,7 @@ import { ApiToken } from '../api-token/api-token.model';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import * as moment from 'moment';
 
 @Injectable()
 export class UserService {
@@ -159,6 +161,54 @@ export class UserService {
         token: token,
       },
     };
+  }
+
+  async resendOtp(email: string): Promise<any> {
+    const user = await this.userModel.findOne({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.otp_verified) {
+      throw new BadRequestException('Account is already verified');
+    }
+
+    const latestOtp = await this.userOtpModel.findOne({
+      where: { user_slug: user.slug },
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (
+      latestOtp &&
+      moment().diff(moment(latestOtp.createdAt), 'seconds') < 30
+    ) {
+      throw new ConflictException(
+        'OTP already sent recently. Please try again later.',
+      );
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+    const otpExpiry = new Date();
+    otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); // OTP expires in 10 minutes
+
+    await this.userOtpModel.update(
+      { is_active: false },
+      {
+        where: {
+          user_slug: user.slug,
+          is_active: true,
+        },
+      },
+    );
+
+    await this.userOtpModel.create({
+      otp,
+      otp_expiry: otpExpiry,
+      is_active: true,
+      user_slug: user.slug,
+    });
+
+    await this.sendOTP(email, otp);
   }
 
   async sendOTP(email: string, otp: string): Promise<any> {

@@ -4,6 +4,7 @@ import { SignupDto } from './dto/signup.dto';
 import { Response } from 'express';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { LoginDto } from './dto/login.dto';
+import { ResendOtpDto } from './dto/resend-otp.dto';
 
 @Controller('user')
 export class UserController {
@@ -60,6 +61,26 @@ export class UserController {
         code: response.code,
         message: response.message,
         data: response.data,
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(error.status || HttpStatus.INTERNAL_SERVER_ERROR).json({
+        code: error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || 'Internal server error',
+        data: [],
+      });
+    }
+  }
+
+  @Post('resend-otp')
+  async resendOtp(@Body() resendOtpDto: ResendOtpDto, @Res() res: Response) {
+    try {
+      const { email } = resendOtpDto;
+      await this.userService.resendOtp(email);
+      res.status(HttpStatus.OK).json({
+        code: 200,
+        message: 'OTP resent',
+        data: [],
       });
     } catch (error) {
       console.log(error);
