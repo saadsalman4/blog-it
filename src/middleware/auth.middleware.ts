@@ -26,16 +26,6 @@ export class AuthMiddleware implements NestMiddleware {
         data: [],
       });
     }
-
-    // const [bearer, token] = authHeader.split(' ');
-
-    // if (bearer !== 'Bearer' || !token) {
-    //   throw new UnauthorizedException({
-    //     code: 401,
-    //     message: 'Invalid token format',
-    //     data: [],
-    //   });
-    // }
     const token = authHeader;
 
     try {

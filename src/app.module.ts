@@ -12,6 +12,11 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
 import { AuthMiddleware } from './middleware/auth.middleware';
 import { ApiTokenService } from './modules/api-token/api-token.service';
 import { ApiTokenController } from './modules/api-token/api-token.controller';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { VoteController } from './modules/vote/vote.controller';
+import { VoteModule } from './modules/vote/vote.module';
+import { VoteService } from './modules/vote/vote.service';
 
 @Module({
   imports: [
@@ -27,16 +32,21 @@ import { ApiTokenController } from './modules/api-token/api-token.controller';
       }),
       inject: [ConfigService],
     }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'), // Path to your static files directory
+    }),
     UserModule,
     UserOtpModule,
     ApiTokenModule,
     BlogModule,
+    VoteModule,
   ],
-  controllers: [AppController, ApiTokenController],
-  providers: [AppService, JwtService, ApiTokenService],
+  controllers: [AppController, ApiTokenController, VoteController],
+  providers: [AppService, JwtService, ApiTokenService, VoteService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes('blog'); // Ensure the path is correct
+    consumer.apply(AuthMiddleware).forRoutes('blog');
+    consumer.apply(AuthMiddleware).forRoutes('vote');
   }
 }
