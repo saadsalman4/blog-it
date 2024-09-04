@@ -32,7 +32,6 @@ export class AuthMiddleware implements NestMiddleware {
       // Decode and verify token using secret key
       const secretKey = this.configService.get<string>('JWT_SECRET_KEY');
       const decodedToken = this.jwtService.verify(token, { secret: secretKey });
-      console.log('Decoded token:', decodedToken);
 
       // Check if token is active
       const apiToken = await this.apiTokenModel.findOne({

@@ -5,6 +5,10 @@ import {
   UseInterceptors,
   UploadedFile,
   Req,
+  Delete,
+  Param,
+  Res,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BlogService } from './blog.service';
@@ -60,5 +64,29 @@ export class BlogController {
       message: 'Blog created successfully',
       data: blog,
     };
+  }
+
+  @Delete('delete/:blogSlug')
+  async deleteBlog(
+    @Param('blogSlug') blogSlug: string,
+    @Req() req,
+    @Res() res,
+  ) {
+    try {
+      const user = req['user'];
+      const userSlug = user.userSlug;
+      await this.blogService.removeBlog(userSlug, blogSlug);
+      return res.status(HttpStatus.OK).json({
+        code: HttpStatus.OK,
+        message: 'Successfully removed blog',
+        data: [],
+      });
+    } catch (error) {
+      res.status(error.status || HttpStatus.INTERNAL_SERVER_ERROR).json({
+        code: error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || 'Internal server error',
+        data: [],
+      });
+    }
   }
 }

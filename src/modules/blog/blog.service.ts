@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Blog } from './blog.model';
 import { BlogDto } from './dto/blog.dto';
@@ -19,5 +19,20 @@ export class BlogService {
     });
     blog.media = this.configService.get<string>('domain') + mediaPath;
     return blog;
+  }
+
+  async removeBlog(userSlug: string, blogSlug: string) {
+    const blog = await this.blogModel.findOne({
+      where: { slug: blogSlug, user_slug: userSlug },
+    });
+
+    if (!blog) {
+      console.log('HERE');
+      throw new HttpException('Cannot find blog', HttpStatus.NOT_FOUND);
+    }
+
+    return await this.blogModel.destroy({
+      where: { slug: blogSlug, user_slug: userSlug },
+    });
   }
 }

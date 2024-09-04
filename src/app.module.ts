@@ -17,6 +17,9 @@ import { join } from 'path';
 import { VoteController } from './modules/vote/vote.controller';
 import { VoteModule } from './modules/vote/vote.module';
 import { VoteService } from './modules/vote/vote.service';
+import { CommentController } from './modules/comment/comment.controller';
+import { CommentModule } from './modules/comment/comment.module';
+import { CommentService } from './modules/comment/comment.service';
 
 @Module({
   imports: [
@@ -40,13 +43,27 @@ import { VoteService } from './modules/vote/vote.service';
     ApiTokenModule,
     BlogModule,
     VoteModule,
+    CommentModule,
   ],
-  controllers: [AppController, ApiTokenController, VoteController],
-  providers: [AppService, JwtService, ApiTokenService, VoteService],
+  controllers: [
+    AppController,
+    ApiTokenController,
+    VoteController,
+    CommentController,
+  ],
+  providers: [
+    AppService,
+    JwtService,
+    ApiTokenService,
+    VoteService,
+    CommentService,
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes('blog');
+    consumer.apply(AuthMiddleware).forRoutes('blog/create');
+    consumer.apply(AuthMiddleware).forRoutes('blog/delete');
     consumer.apply(AuthMiddleware).forRoutes('vote');
+    consumer.apply(AuthMiddleware).forRoutes('comments');
   }
 }
