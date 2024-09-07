@@ -20,6 +20,7 @@ import { VoteService } from './modules/vote/vote.service';
 import { CommentController } from './modules/comment/comment.controller';
 import { CommentModule } from './modules/comment/comment.module';
 import { CommentService } from './modules/comment/comment.service';
+import { RelationshipModule } from './modules/relationship/relationship.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { CommentService } from './modules/comment/comment.service';
     BlogModule,
     VoteModule,
     CommentModule,
+    RelationshipModule,
   ],
   controllers: [
     AppController,
@@ -63,7 +65,9 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(AuthMiddleware).forRoutes('blog/create');
     consumer.apply(AuthMiddleware).forRoutes('blog/delete');
+    consumer.apply(AuthMiddleware).forRoutes('blog/following');
     consumer.apply(AuthMiddleware).forRoutes('vote');
     consumer.apply(AuthMiddleware).forRoutes('comments');
+    consumer.apply(AuthMiddleware).forRoutes('relationships');
   }
 }
