@@ -102,8 +102,6 @@ export class UserService {
       throw new UnauthorizedException('Invalid password');
     }
 
-    console.log('HERE');
-
     if (!user.otp_verified) {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const otpExpiry = new Date();
