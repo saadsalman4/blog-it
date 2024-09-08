@@ -69,5 +69,6 @@ export class AppModule implements NestModule {
     consumer.apply(AuthMiddleware).forRoutes('vote');
     consumer.apply(AuthMiddleware).forRoutes('comments');
     consumer.apply(AuthMiddleware).forRoutes('relationships');
+    consumer.apply(AuthMiddleware).forRoutes('user/edit-profile');
   }
 }

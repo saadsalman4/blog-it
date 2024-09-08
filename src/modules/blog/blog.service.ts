@@ -46,6 +46,7 @@ export class BlogService {
   async getAllBlogs(page: number) {
     const limit = 5;
     const offset = (page - 1) * limit;
+    const domain = this.configService.get<string>('domain'); // Get domain from .env
 
     const blogs = await this.blogModel.findAll({
       attributes: [
@@ -75,7 +76,7 @@ export class BlogService {
         [
           this.voteModel.sequelize.literal(
             `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote') -
-           (SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+          (SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
           ),
           'ranking',
         ],
@@ -91,12 +92,21 @@ export class BlogService {
       offset,
     });
 
-    return blogs;
+    // Modify the media URL
+    const modifiedBlogs = blogs.map((blog) => {
+      return {
+        ...blog.get(),
+        media: blog.media ? `${domain}${blog.media}` : null,
+      };
+    });
+
+    return modifiedBlogs;
   }
 
   async getFollowedUsersBlogs(userSlug: string, page: number) {
     const limit = 5;
     const offset = (page - 1) * limit;
+    const domain = this.configService.get<string>('domain');
 
     // Get all followed users by the current user
     const followedUsers = await this.relationshipModel.findAll({
@@ -155,6 +165,74 @@ export class BlogService {
       offset,
     });
 
-    return blogs;
+    const modifiedBlogs = blogs.map((blog) => {
+      return {
+        ...blog.get(),
+        media: blog.media ? `${domain}${blog.media}` : null,
+      };
+    });
+
+    return modifiedBlogs;
+  }
+
+  async getUserBlogs(userSlug: string, page: number) {
+    const limit = 5;
+    const offset = (page - 1) * limit;
+    const domain = this.configService.get<string>('domain'); // Get domain from .env
+
+    const blogs = await this.blogModel.findAll({
+      where: { user_slug: userSlug },
+      attributes: [
+        'slug',
+        'title',
+        'media',
+        'description',
+        'user_slug',
+        [
+          this.voteModel.sequelize.literal(
+            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote')`,
+          ),
+          'upvotes',
+        ],
+        [
+          this.voteModel.sequelize.literal(
+            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+          ),
+          'downvotes',
+        ],
+        [
+          this.commentModel.sequelize.literal(
+            `(SELECT COUNT(*) FROM \`Comments\` WHERE \`Comments\`.\`blog_slug\` = \`Blog\`.\`slug\`)`,
+          ),
+          'commentsCount',
+        ],
+        [
+          this.voteModel.sequelize.literal(
+            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote') -
+          (SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+          ),
+          'ranking',
+        ],
+      ],
+      include: [
+        {
+          model: User,
+          attributes: ['fullName', 'profileImg'],
+        },
+      ],
+      order: [[this.voteModel.sequelize.literal('ranking'), 'DESC']],
+      limit,
+      offset,
+    });
+
+    // Modify the media URL
+    const modifiedBlogs = blogs.map((blog) => {
+      return {
+        ...blog.get(),
+        media: blog.media ? `${domain}${blog.media}` : null,
+      };
+    });
+
+    return modifiedBlogs;
   }
 }

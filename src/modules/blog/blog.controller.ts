@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BlogService } from './blog.service';
-import { BlogDto } from './dto/blog.dto'; // Assuming you have a DTO for blog creation
+import { BlogDto } from './dto/blog.dto';
 import { Request } from 'express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
@@ -127,6 +127,28 @@ export class BlogController {
       console.log(error);
       res.status(error.status || HttpStatus.INTERNAL_SERVER_ERROR).json({
         code: error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || 'Internal server error',
+        data: [],
+      });
+    }
+  }
+
+  @Get('/user/:userSlug')
+  async getUserBlogs(
+    @Param('userSlug') userSlug: string,
+    @Query('page') page: number = 1, // Defaults to page 1 if not provided
+    @Res() res,
+  ) {
+    try {
+      const blogs = await this.blogService.getUserBlogs(userSlug, page);
+      return res.status(HttpStatus.OK).json({
+        code: HttpStatus.OK,
+        message: 'User blogs retrieved successfully',
+        data: blogs,
+      });
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        code: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message || 'Internal server error',
         data: [],
       });

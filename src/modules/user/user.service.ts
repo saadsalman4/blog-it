@@ -16,6 +16,7 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as moment from 'moment';
+import { Relationship } from '../relationship/relationship.model';
 
 @Injectable()
 export class UserService {
@@ -24,9 +25,11 @@ export class UserService {
     private readonly userModel: typeof User,
     @InjectModel(UserOtp)
     private readonly userOtpModel: typeof UserOtp,
+    @InjectModel(Relationship)
+    private readonly relationshipModel: typeof Relationship,
     @InjectModel(ApiToken) private readonly apiTokenModel: typeof ApiToken,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService, // Inject ConfigService
+    private readonly configService: ConfigService,
   ) {}
 
   async signup(signupDto: SignupDto): Promise<void> {
@@ -207,6 +210,69 @@ export class UserService {
     });
 
     await this.sendOTP(email, otp);
+  }
+
+  async getUserInfo(userSlug: string) {
+    const domain = this.configService.get<string>('domain');
+    let user = await this.userModel.findOne({
+      where: { slug: userSlug },
+      attributes: ['fullName', 'profileImg'],
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const followersCount = await this.relationshipModel.count({
+      where: {
+        followed_id: userSlug,
+      },
+    });
+
+    const followingCount = await this.relationshipModel.count({
+      where: {
+        follower_id: userSlug,
+      },
+    });
+
+    if (user.profileImg) {
+      user.profileImg = `${domain}${user.profileImg}`;
+    }
+
+    return {
+      fullName: user.fullName,
+      profileImg: user.profileImg,
+      followers: followersCount,
+      following: followingCount,
+    };
+  }
+
+  async updateUserProfile(
+    userSlug: string,
+    updateData: { fullName?: string; profileImg?: string },
+  ) {
+    const domain = this.configService.get<string>('domain');
+    const user = await this.userModel.findOne({ where: { slug: userSlug } });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (updateData.fullName) {
+      user.fullName = updateData.fullName;
+    }
+
+    if (updateData.profileImg) {
+      user.profileImg = updateData.profileImg;
+    }
+
+    await user.save();
+
+    if (user.profileImg) {
+      user.profileImg = `${domain}${user.profileImg}`;
+    }
+
+    return user;
   }
 
   async sendOTP(email: string, otp: string): Promise<any> {
