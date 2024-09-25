@@ -17,6 +17,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as moment from 'moment';
 import { Relationship } from '../relationship/relationship.model';
+const nodemailer = require('nodemailer');
 
 @Injectable()
 export class UserService {
@@ -270,7 +271,29 @@ export class UserService {
   }
 
   async sendOTP(email: string, otp: string): Promise<any> {
-    //TODO at the end
+    // Configure Gmail SMTP transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_PASSWORD,
+      },
+  });
+
+    const mailOptions = {
+      from: `"blogIt" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: 'Your Account Verification OTP Code',
+      text: `Your OTP is ${otp}\nIf you did not request for an OTP, you can ignore this email!`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
     console.log('OTP sent to ', email, ': ', otp);
+} catch (error) {
+  console.log(error)
+  throw Error(error.message)
+
+}
   }
 }
