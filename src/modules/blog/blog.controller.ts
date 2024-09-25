@@ -16,7 +16,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { BlogService } from './blog.service';
 import { BlogDto } from './dto/blog.dto';
 import { Request } from 'express';
-import { diskStorage } from 'multer';
 import * as path from 'path';
 import { BlobServiceClient } from '@azure/storage-blob';
 
@@ -61,21 +60,6 @@ export class BlogController {
       message: 'Blog created successfully',
       data: blog,
     };
-  }
-
-  private async uploadToAzureBlob(file: Express.Multer.File): Promise<string> {
-    const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
-    const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_BLOB_CONTAINER_NAME);
-
-    // Generate a unique file name for the blob
-    const blobName = `${Date.now()}-${path.parse(file.originalname).name}${path.extname(file.originalname)}`;
-    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-
-    // Upload file buffer to Azure Blob
-    await blockBlobClient.uploadData(file.buffer);
-
-    // Return the URL to access the blob
-    return `${process.env.AZURE_BLOB_URL}/${process.env.AZURE_BLOB_CONTAINER_NAME}/${blobName}`;
   }
 
   @Delete('delete/:blogSlug')
@@ -164,4 +148,28 @@ export class BlogController {
       });
     }
   }
+
+  
+  private async uploadToAzureBlob(file: Express.Multer.File): Promise<string> {
+    const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+    const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_BLOB_CONTAINER_NAME);
+  
+    // Generate a unique file name for the blob
+    const blobName = `${Date.now()}-${path.parse(file.originalname).name}${path.extname(file.originalname)}`;
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+  
+    // Set the correct Content-Type based on the file's MIME type
+    const contentType = file.mimetype; // This will get the correct MIME type of the uploaded file
+  
+    // Upload file buffer to Azure Blob with the appropriate content type
+    await blockBlobClient.uploadData(file.buffer, {
+      blobHTTPHeaders: {
+        blobContentType: contentType, // Ensure the Content-Type is set correctly
+      },
+    });
+  
+    // Return the URL to access the blob
+    return `${process.env.AZURE_BLOB_URL}/${process.env.AZURE_BLOB_CONTAINER_NAME}/${blobName}`;
+  }
+
 }

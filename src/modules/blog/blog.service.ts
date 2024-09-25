@@ -92,15 +92,9 @@ export class BlogService {
       offset,
     });
 
-    // Modify the media URL
-    const modifiedBlogs = blogs.map((blog) => {
-      return {
-        ...blog.get(),
-        media: blog.media ? `${domain}${blog.media}` : null,
-      };
-    });
+    
 
-    return modifiedBlogs;
+    return blogs;
   }
 
   async getFollowedUsersBlogs(userSlug: string, page: number) {
@@ -165,14 +159,8 @@ export class BlogService {
       offset,
     });
 
-    const modifiedBlogs = blogs.map((blog) => {
-      return {
-        ...blog.get(),
-        media: blog.media ? `${domain}${blog.media}` : null,
-      };
-    });
 
-    return modifiedBlogs;
+    return blogs;
   }
 
   async getUserBlogs(userSlug: string, page: number) {
@@ -225,14 +213,7 @@ export class BlogService {
       offset,
     });
 
-    // Modify the media URL
-    const modifiedBlogs = blogs.map((blog) => {
-      return {
-        ...blog.get(),
-        media: blog.media ? `${domain}${blog.media}` : null,
-      };
-    });
 
-    return modifiedBlogs;
+    return blogs;
   }
 }

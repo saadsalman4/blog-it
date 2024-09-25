@@ -18,8 +18,9 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { BlobServiceClient } from '@azure/storage-blob';
+import * as path from 'path';
+
 
 @Controller('user')
 export class UserController {
@@ -126,51 +127,76 @@ export class UserController {
   }
 
   @Put('/edit-profile')
-  @UseInterceptors(
-    FileInterceptor('profileImg', {
-      storage: diskStorage({
-        destination: './public/uploads',
-        filename: (req, file, callback) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const fileExt = extname(file.originalname);
-          callback(null, `profile-${uniqueSuffix}${fileExt}`);
-        },
-      }),
-    }),
-  )
-  async editUserProfile(
-    @Body() updateData: { fullName?: string },
-    @UploadedFile() profileImg: Express.Multer.File,
-    @Req() req,
-    @Res() res,
-  ) {
-    try {
-      const userSlug = req.user.userSlug; // Assuming userSlug is extracted from the token in the request
+@UseInterceptors(
+  FileInterceptor('profileImg', {
+    fileFilter: (req, file, callback) => {
+      const allowedMimeTypes = ['image/jpeg', 'image/png'];
+      if (allowedMimeTypes.includes(file.mimetype)) {
+        callback(null, true);
+      } else {
+        callback(
+          new Error('Invalid file type. Only JPEG and PNG images are allowed.'),
+          false,
+        );
+      }
+    },
+  }),
+)
+async editUserProfile(
+  @Body() updateData: { fullName?: string },
+  @UploadedFile() profileImg: Express.Multer.File,
+  @Req() req,
+  @Res() res,
+) {
+  try {
+    const userSlug = req.user.userSlug; // Assuming userSlug is extracted from the token in the request
 
-      const profileImgPath = profileImg
-        ? `/uploads/${profileImg.filename}`
-        : undefined;
+    let profileImgPath: string | undefined = undefined;
+    if (profileImg) {
+      // Upload the image to Azure Blob Storage
+      profileImgPath = await this.uploadProfileImageToAzureBlob(profileImg);
+    }
 
-      const updatedUser = await this.userService.updateUserProfile(userSlug, {
-        fullName: updateData.fullName,
-        profileImg: profileImgPath,
-      });
+    const updatedUser = await this.userService.updateUserProfile(userSlug, {
+      fullName: updateData.fullName,
+      profileImg: profileImgPath,
+    });
 
-      return res.status(HttpStatus.OK).json({
-        code: HttpStatus.OK,
-        message: 'Profile updated successfully',
-        data: {
-          fullName: updatedUser.fullName,
-          profileImg: updatedUser.profileImg,
-        },
-      });
-    } catch (error) {
-      return res.status(error.status || HttpStatus.INTERNAL_SERVER_ERROR).json({
+    return res.status(HttpStatus.OK).json({
+      code: HttpStatus.OK,
+      message: 'Profile updated successfully',
+      data: {
+        fullName: updatedUser.fullName,
+        profileImg: updatedUser.profileImg,
+      },
+    });
+  } catch (error) {
+    return res
+      .status(error.status || HttpStatus.INTERNAL_SERVER_ERROR)
+      .json({
         code: error.status || HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message || 'Internal server error',
         data: [],
       });
-    }
+  }
+  }
+
+  private async uploadProfileImageToAzureBlob(file: Express.Multer.File): Promise<string> {
+    const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+    const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_BLOB_CONTAINER_NAME);
+  
+    // Generate a unique file name for the blob
+    const blobName = `profile-${Date.now()}-${path.parse(file.originalname).name}${path.extname(file.originalname)}`;
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+  
+    // Upload file buffer to Azure Blob with the appropriate content type (only images allowed)
+    await blockBlobClient.uploadData(file.buffer, {
+      blobHTTPHeaders: {
+        blobContentType: file.mimetype, // Ensure the correct MIME type for the image
+      },
+    });
+  
+    // Return the URL to access the blob
+    return `${process.env.AZURE_BLOB_URL}/${process.env.AZURE_BLOB_CONTAINER_NAME}/${blobName}`;
   }
 }

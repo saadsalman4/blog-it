@@ -235,9 +235,6 @@ export class UserService {
       },
     });
 
-    if (user.profileImg) {
-      user.profileImg = `${domain}${user.profileImg}`;
-    }
 
     return {
       fullName: user.fullName,
@@ -268,9 +265,6 @@ export class UserService {
 
     await user.save();
 
-    if (user.profileImg) {
-      user.profileImg = `${domain}${user.profileImg}`;
-    }
 
     return user;
   }
