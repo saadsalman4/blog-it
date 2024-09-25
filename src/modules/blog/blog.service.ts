@@ -24,7 +24,7 @@ export class BlogService {
       user_slug: userSlug,
       media: mediaPath,
     });
-    blog.media = this.configService.get<string>('domain') + mediaPath;
+    // blog.media = this.configService.get<string>('domain') + mediaPath;
     return blog;
   }
 

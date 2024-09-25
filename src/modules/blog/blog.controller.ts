@@ -18,6 +18,7 @@ import { BlogDto } from './dto/blog.dto';
 import { Request } from 'express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
+import { BlobServiceClient } from '@azure/storage-blob';
 
 @Controller('blog')
 export class BlogController {
@@ -26,20 +27,13 @@ export class BlogController {
   @Post('create')
   @UseInterceptors(
     FileInterceptor('media', {
-      storage: diskStorage({
-        destination: './public/uploads', // Adjust the path as per your directory structure
-        filename: (req, file, cb) => {
-          const fileName = `${Date.now()}-${path.parse(file.originalname).name}${path.extname(file.originalname)}`;
-          cb(null, fileName);
-        },
-      }),
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB size limit for media upload
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB size limit
       fileFilter: (req, file, cb) => {
         const allowedMimeTypes = ['image/jpeg', 'image/png', 'video/mp4'];
         if (allowedMimeTypes.includes(file.mimetype)) {
           cb(null, true);
         } else {
-          cb(null, false);
+          cb(new Error('Invalid file type'), false);
         }
       },
     }),
@@ -51,21 +45,37 @@ export class BlogController {
   ) {
     const user = req['user']; // Retrieved from the AuthMiddleware
 
-    let mediaPath = null;
+    let mediaUrl = null;
     if (file) {
-      mediaPath = `/uploads/${file.filename}`; // Adjust the path as per your public directory structure
+      mediaUrl = await this.uploadToAzureBlob(file);
     }
 
     const blog = await this.blogService.createBlog(
       user.userSlug,
       blogDto,
-      mediaPath,
+      mediaUrl, // Store the Azure Blob URL in the database
     );
+
     return {
       code: 201,
       message: 'Blog created successfully',
       data: blog,
     };
+  }
+
+  private async uploadToAzureBlob(file: Express.Multer.File): Promise<string> {
+    const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+    const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_BLOB_CONTAINER_NAME);
+
+    // Generate a unique file name for the blob
+    const blobName = `${Date.now()}-${path.parse(file.originalname).name}${path.extname(file.originalname)}`;
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    // Upload file buffer to Azure Blob
+    await blockBlobClient.uploadData(file.buffer);
+
+    // Return the URL to access the blob
+    return `${process.env.AZURE_BLOB_URL}/${process.env.AZURE_BLOB_CONTAINER_NAME}/${blobName}`;
   }
 
   @Delete('delete/:blogSlug')
