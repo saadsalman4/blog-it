@@ -17,6 +17,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as moment from 'moment';
 import { Relationship } from '../relationship/relationship.model';
+import axios from 'axios';
 const nodemailer = require('nodemailer');
 
 @Injectable()
@@ -271,29 +272,15 @@ export class UserService {
   }
 
   async sendOTP(email: string, otp: string): Promise<any> {
-    // Configure Gmail SMTP transporter
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-          user: process.env.GMAIL_USER,
-          pass: process.env.GMAIL_PASSWORD,
-      },
-  });
+    try {
+      const response = await axios.post(process.env.AZURE_MAIL_OTP_API, {
+          email: email,
+          otp: otp
+      });
 
-    const mailOptions = {
-      from: `"blogIt" <${process.env.GMAIL_USER}>`,
-      to: email,
-      subject: 'Your Account Verification OTP Code',
-      text: `Your OTP is ${otp}\nIf you did not request for an OTP, you can ignore this email!`,
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log('OTP sent to ', email, ': ', otp);
-} catch (error) {
-  console.log(error)
-  throw Error(error.message)
-
-}
+      console.log('Response from Azure Function:', response.data);
+  } catch (error) {
+      console.error('Error calling Azure Function:', error.response ? error.response.data : error.message);
+  }
   }
 }
