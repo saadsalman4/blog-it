@@ -8,6 +8,7 @@ import {
   DataType,
   BeforeCreate,
   BeforeUpdate,
+  AfterSync,
 } from 'sequelize-typescript';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
@@ -56,4 +57,27 @@ export class User extends Model<User> {
     defaultValue: false,
   })
   otp_verified: boolean;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false, // Default to false, meaning not blocked
+  })
+  blocked: boolean;
+
+
+  @AfterSync
+  static async addInitialAdmin() {
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@blogit.com';
+    const existingAdmin = await User.findOne({ where: { email: adminEmail } });
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await User.create({
+        fullName: 'Super Admin',
+        email: adminEmail,
+        password: hashedPassword,
+        role: 'admin',
+        otp_verified: true,
+      });
+    }
+  }
 }

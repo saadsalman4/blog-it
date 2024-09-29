@@ -33,6 +33,7 @@ export class Vote extends Model<Vote> {
   @Column({
     type: DataType.UUID,
     allowNull: false,
+    onDelete: 'CASCADE'
   })
   blog_slug: string;
 

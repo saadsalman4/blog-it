@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NestMiddleware,
   UnauthorizedException,
@@ -8,6 +9,8 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/sequelize';
 import { ApiToken } from '../modules/api-token/api-token.model';
 import { ConfigService } from '@nestjs/config';
+import { User } from '../modules/user/user.model';
+
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
@@ -15,6 +18,7 @@ export class AuthMiddleware implements NestMiddleware {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @InjectModel(ApiToken) private readonly apiTokenModel: typeof ApiToken,
+    @InjectModel(User) private readonly userModel: typeof User
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
@@ -27,17 +31,15 @@ export class AuthMiddleware implements NestMiddleware {
       });
     }
     const token = authHeader;
-
+  
     try {
-      // Decode and verify token using secret key
       const secretKey = this.configService.get<string>('JWT_SECRET_KEY');
       const decodedToken = this.jwtService.verify(token, { secret: secretKey });
-
-      // Check if token is active
+  
       const apiToken = await this.apiTokenModel.findOne({
         where: { api_token: token, is_active: true },
       });
-
+  
       if (!apiToken) {
         throw new UnauthorizedException({
           code: 401,
@@ -45,11 +47,37 @@ export class AuthMiddleware implements NestMiddleware {
           data: [],
         });
       }
-
-      req['user'] = decodedToken; // Attach user info to request if needed
+  
+      // Check if user is blocked
+      const user = await this.userModel.findOne({ where: { slug: decodedToken.userSlug } });
+      if (!user) {
+        throw new UnauthorizedException({
+          code: 401,
+          message: 'User not found',
+          data: [],
+        });
+      }
+  
+      // Return 403 if the user is blocked
+      if (user.blocked) {
+        throw new ForbiddenException({
+          code: 403,
+          message: 'User is blocked',
+          data: [],
+        });
+      }
+  
+      req['user'] = decodedToken;
       next();
     } catch (error) {
       console.log(error);
+      if (error.status === 403) {
+        throw new ForbiddenException({
+          code: 403,
+          message: 'User is blocked',
+          data: [],
+        });
+      }
       throw new UnauthorizedException({
         code: 401,
         message: 'Token verification failed',
@@ -57,4 +85,6 @@ export class AuthMiddleware implements NestMiddleware {
       });
     }
   }
+  
+  
 }

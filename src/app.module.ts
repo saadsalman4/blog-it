@@ -21,6 +21,8 @@ import { CommentController } from './modules/comment/comment.controller';
 import { CommentModule } from './modules/comment/comment.module';
 import { CommentService } from './modules/comment/comment.service';
 import { RelationshipModule } from './modules/relationship/relationship.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { AdminAuthMiddleware} from './middleware/admin_auth.middleware'
 
 @Module({
   imports: [
@@ -46,6 +48,7 @@ import { RelationshipModule } from './modules/relationship/relationship.module';
     VoteModule,
     CommentModule,
     RelationshipModule,
+    AdminModule,
   ],
   controllers: [
     AppController,
@@ -70,5 +73,6 @@ export class AppModule implements NestModule {
     consumer.apply(AuthMiddleware).forRoutes('comments');
     consumer.apply(AuthMiddleware).forRoutes('relationships');
     consumer.apply(AuthMiddleware).forRoutes('user/edit-profile');
+    consumer.apply(AdminAuthMiddleware).forRoutes('admin')
   }
 }

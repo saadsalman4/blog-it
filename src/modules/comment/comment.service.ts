@@ -33,30 +33,33 @@ export class CommentService {
       include: [{ all: true }], // Adjust as needed to get the blog owner's details
     });
 
-    // Fetch the comment author's full name
-    const commentAuthor = await this.userModel.findOne({
-      where: { slug: userSlug },
-    });
+    if(userSlug != blog.user_slug){
 
-    if (blog && commentAuthor) {
-      const blogOwnerEmail = blog.user.email; // Assuming blog has a user association with an email field
-      const blogTitle = blog.title;
-      const commentAuthorName = commentAuthor.fullName; // Fetch the full name of the comment author
+      // Fetch the comment author's full name
+      const commentAuthor = await this.userModel.findOne({
+        where: { slug: userSlug },
+      });
 
-      // Call the Azure Function using Axios
-      try {
-        await axios.post(process.env.AZURE_MAIL_NOTIFICATION_API, {
-          blogTitle,
-          commentAuthor: commentAuthorName, // Use the author's full name
-          blogOwnerEmail,
-          comment,
-        });
+      if (blog && commentAuthor) {
+        const blogOwnerEmail = blog.user.email; // Assuming blog has a user association with an email field
+        const blogTitle = blog.title;
+        const commentAuthorName = commentAuthor.fullName; // Fetch the full name of the comment author
 
-        console.log('Email notification sent successfully');
-      } catch (error) {
-        console.error('Error sending email notification:', error.message);
+        // Call the Azure Function using Axios
+        try {
+          await axios.post(process.env.AZURE_MAIL_NOTIFICATION_API, {
+            blogTitle,
+            commentAuthor: commentAuthorName, // Use the author's full name
+            blogOwnerEmail,
+            comment,
+          });
+
+          console.log('Email notification sent successfully');
+        } catch (error) {
+          console.error('Error sending email notification:', error.message);
+        }
       }
-    }
+  }
 
     return newComment;
   }

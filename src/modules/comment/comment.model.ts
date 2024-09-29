@@ -31,6 +31,7 @@ export class Comment extends Model<Comment> {
   @Column({
     type: DataType.UUID,
     allowNull: false,
+    onDelete: 'CASCADE'
   })
   blog_slug: string;
 

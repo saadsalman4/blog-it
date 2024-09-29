@@ -107,6 +107,10 @@ export class UserService {
       throw new UnauthorizedException('Invalid password');
     }
 
+    if(user.blocked){
+      throw new UnauthorizedException('User blocked')
+    }
+
     if (!user.otp_verified) {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const otpExpiry = new Date();
@@ -148,12 +152,24 @@ export class UserService {
       { where: { user_slug: user.slug, is_active: true } },
     );
 
-    await this.apiTokenModel.create({
-      api_token: token,
-      token_type: 'user',
-      is_active: true,
-      user_slug: user.slug,
-    });
+    if(user.role=='user'){
+      await this.apiTokenModel.create({
+            api_token: token,
+            token_type: 'user',
+            is_active: true,
+            user_slug: user.slug,
+          });
+    }
+    else{
+      await this.apiTokenModel.create({
+        api_token: token,
+        token_type: 'admin',
+        is_active: true,
+        user_slug: user.slug,
+      });
+    }
+
+    
 
     return {
       code: HttpStatus.OK,
