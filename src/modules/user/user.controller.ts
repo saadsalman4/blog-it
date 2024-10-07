@@ -20,12 +20,39 @@ import { ResendOtpDto } from './dto/resend-otp.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 
+
+@ApiTags('User')
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('signup')
+  @ApiOperation({ summary: 'Register a new user' })  // Description of the operation
+  @ApiBody({ type: SignupDto, description: 'The user data for registration' })  // Body description
+  @ApiResponse({
+    status: 201,
+    description: 'User registered successfully',  // Success response description
+    schema: {
+      example: {
+        code: 201,
+        message: 'User registered successfully',
+        data: [],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',  // Error response description
+    schema: {
+      example: {
+        code: 500,
+        message: 'Internal server error',
+        data: [],
+      },
+    },
+  })
   async signup(
     @Body() signupDto: SignupDto,
     @Res() res: Response,
@@ -48,6 +75,19 @@ export class UserController {
   }
 
   @Post('verify-otp')
+  @ApiOperation({ summary: 'Verify OTP for a user' })  // Description of the operation
+  @ApiBody({ type: VerifyOtpDto, description: 'The OTP and email for verification' })  // Body description
+  @ApiResponse({
+    status: 200,
+    description: 'User verified successfully',  // Success response description
+    schema: {
+      example: {
+        code: 200,
+        message: 'User verified successfully',
+        data: [],
+      },
+    },
+  })
   async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto, @Res() res: Response) {
     try {
       const { email, otp } = verifyOtpDto;

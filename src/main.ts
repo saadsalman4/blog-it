@@ -2,9 +2,25 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ValidationExceptionFilter } from './common/filters/validation-exception.filter';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Set up Swagger options
+  const config = new DocumentBuilder()
+    .setTitle('API Documentation')
+    .setDescription('The API description')
+    .setVersion('1.0')
+    .addBearerAuth()  // Add security if your API uses JWT
+    .build();
+
+  // Create the Swagger document
+  const document = SwaggerModule.createDocument(app, config);
+
+  // Serve the Swagger documentation at `/api-docs`
+  SwaggerModule.setup('api-docs', app, document);
 
   // Enable global validation with whitelist and forbidNonWhitelisted
   app.useGlobalPipes(
