@@ -133,6 +133,26 @@ export class BlogController {
     }
   }
 
+  @Get(':blogSlug')
+  async getBlogBySlug(@Param('blogSlug') slug: string, @Res() res) {
+    try{
+        const blog = await this.blogService.getBlog(slug);
+        return res.status(HttpStatus.OK).json({
+          code: HttpStatus.OK,
+          message: 'Successfully retrieved blog',
+          data: blog
+        });
+    }
+    catch(error){
+      res.status(error.status || HttpStatus.INTERNAL_SERVER_ERROR).json({
+        code: error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || 'Internal server error',
+        data: [],
+      });
+    }
+    
+  }
+
   @Get('/user/:userSlug')
   async getUserBlogs(
     @Param('userSlug') userSlug: string,

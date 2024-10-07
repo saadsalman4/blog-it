@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Blog } from './blog.model';
 import { BlogDto } from './dto/blog.dto';
@@ -16,6 +16,7 @@ export class BlogService {
     @InjectModel(Vote) private readonly voteModel: typeof Vote,
     @InjectModel(Comment) private readonly commentModel: typeof Comment,
     @InjectModel(Relationship) private relationshipModel: typeof Relationship,
+    @InjectModel(User) private userModel: typeof User,
   ) {}
 
   async createBlog(userSlug: string, blogDto: BlogDto, mediaPath: string) {
@@ -34,7 +35,6 @@ export class BlogService {
     });
 
     if (!blog) {
-      console.log('HERE');
       throw new HttpException('Cannot find blog', HttpStatus.NOT_FOUND);
     }
 
@@ -101,6 +101,25 @@ export class BlogService {
     });
 
     return modifiedBlogs;
+  }
+
+  async getBlog(blogSlug: string){
+    const domain = this.configService.get<string>('domain'); 
+    const blog = await this.blogModel.findOne({
+      where: { slug: blogSlug },
+      include: [
+        {
+          model: User, // Include the user who posted the blog
+          attributes: ['fullName', 'email', 'profileImg'], // Include specific user attributes
+        },
+      ],
+    });
+    if(!blog){
+      throw new HttpException('Cannot find blog', HttpStatus.NOT_FOUND);
+    }
+    blog.media= blog.media ? `${domain}${blog.media}` : null
+    blog.user.profileImg = blog.user.profileImg ? `${domain}${blog.user.profileImg}` : null
+    return blog
   }
 
   async getFollowedUsersBlogs(userSlug: string, page: number) {
