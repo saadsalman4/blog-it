@@ -97,6 +97,23 @@ export class BlogService {
     return blogs;
   }
 
+  async getBlog(blogSlug: string){
+    const blog = await this.blogModel.findOne({
+      where: { slug: blogSlug },
+      include: [
+        {
+          model: User, // Include the user who posted the blog
+          attributes: ['fullName', 'email', 'profileImg'], // Include specific user attributes
+        },
+      ],
+    });
+    if(!blog){
+      throw new HttpException('Cannot find blog', HttpStatus.NOT_FOUND);
+    }
+    return blog
+  }
+
+
   async getFollowedUsersBlogs(userSlug: string, page: number) {
     const limit = 5;
     const offset = (page - 1) * limit;
