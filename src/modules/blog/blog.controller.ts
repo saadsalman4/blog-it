@@ -18,7 +18,10 @@ import { BlogDto } from './dto/blog.dto';
 import { Request } from 'express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 
+
+@ApiTags('Blog')
 @Controller('blog')
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
@@ -69,6 +72,46 @@ export class BlogController {
   }
 
   @Delete('delete/:blogSlug')
+  @ApiOperation({ summary: 'Delete a blog post by slug' })  // Description of the operation
+  @ApiBearerAuth()  // Indicates that the API uses a bearer token (JWT)
+  @ApiParam({
+    name: 'blogSlug',
+    description: 'The slug of the blog to be deleted',
+    example: 'my-awesome-blog',
+  })  // Documenting the blogSlug parameter
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully removed blog',
+    schema: {
+      example: {
+        code: 200,
+        message: 'Successfully removed blog',
+        data: [],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token missing or invalid',
+    schema: {
+      example: {
+        code: 401,
+        message: 'Unauthorized',
+        data: [],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      example: {
+        code: 500,
+        message: 'Internal server error',
+        data: [],
+      },
+    },
+  })
   async deleteBlog(
     @Param('blogSlug') blogSlug: string,
     @Req() req,
