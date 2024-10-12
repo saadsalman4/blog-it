@@ -23,6 +23,7 @@ export class CommentController {
   ) {
     try {
       const user = req['user'];
+      const fullName = user.fullName;
       const userSlug = user.userSlug;
       const comment = await this.commentService.createComment(
         userSlug,
@@ -31,7 +32,7 @@ export class CommentController {
       return res.status(HttpStatus.CREATED).json({
         code: HttpStatus.CREATED,
         message: 'Comment created successfully',
-        data: comment,
+        data: { comment, fullName },
       });
     } catch (error) {
       res.status(error.status || HttpStatus.INTERNAL_SERVER_ERROR).json({
