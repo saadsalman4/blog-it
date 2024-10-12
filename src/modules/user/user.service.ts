@@ -261,6 +261,27 @@ export class UserService {
     };
   }
 
+  async getSelfInfo(userSlug: string){
+    const domain = this.configService.get<string>('domain');
+    let user = await this.userModel.findOne({
+      where: { slug: userSlug },
+      attributes: ['fullName', 'profileImg'],
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (user.profileImg) {
+      user.profileImg = `${domain}${user.profileImg}`;
+    }
+
+    return {
+      fullName: user.fullName,
+      profileImg: user.profileImg
+    };
+  }
+
   async updateUserProfile(
     userSlug: string,
     updateData: { fullName?: string; profileImg?: string },

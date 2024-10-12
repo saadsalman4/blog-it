@@ -8,9 +8,11 @@ import {
   IsUUID,
   ForeignKey,
   BelongsTo,
+  HasMany,
 } from 'sequelize-typescript';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../user/user.model';
+import {Comment} from '../comment/comment.model'
 
 @Table
 export class Blog extends Model<Blog> {
@@ -45,4 +47,8 @@ export class Blog extends Model<Blog> {
 
   @BelongsTo(() => User)
   user: User;
+
+  @HasMany(() => Comment)
+  comments: Comment[];
 }
+
