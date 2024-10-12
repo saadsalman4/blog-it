@@ -66,13 +66,12 @@ import { AdminAuthMiddleware} from './middleware/admin_auth.middleware'
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes('blog/create');
-    consumer.apply(AuthMiddleware).forRoutes('blog/delete');
-    consumer.apply(AuthMiddleware).forRoutes('blog/following');
+    consumer.apply(AuthMiddleware).forRoutes('blog');
     consumer.apply(AuthMiddleware).forRoutes('vote');
     consumer.apply(AuthMiddleware).forRoutes('comments');
     consumer.apply(AuthMiddleware).forRoutes('relationships');
     consumer.apply(AuthMiddleware).forRoutes('user/edit-profile');
+    consumer.apply(AuthMiddleware).forRoutes('user/logged-in-user');
     consumer.apply(AdminAuthMiddleware).forRoutes('admin')
   }
 }

@@ -128,9 +128,10 @@ export class BlogController {
   }
 
   @Get(':blogSlug')
-  async getBlogBySlug(@Param('blogSlug') slug: string, @Res() res) {
+  async getBlogBySlug(@Param('blogSlug') slug: string, @Req() req, @Res() res) {
     try{
-        const blog = await this.blogService.getBlog(slug);
+      const user = req['user'];
+        const blog = await this.blogService.getBlog(slug, user.userSlug);
         return res.status(HttpStatus.OK).json({
           code: HttpStatus.OK,
           message: 'Successfully retrieved blog',

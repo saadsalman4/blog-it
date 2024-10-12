@@ -126,6 +126,26 @@ export class UserController {
     }
   }
 
+  @Get('/logged-in-user')
+  async getSelfInfo(@Res() res, @Req() req) {
+    try {
+      const user = req['user'];
+      const userInfo = await this.userService.getSelfInfo(user.userSlug);
+      return res.status(HttpStatus.OK).json({
+        code: HttpStatus.OK,
+        message: 'User info retrieved successfully',
+        data: userInfo,
+      });
+    } catch (error) {
+      console.log(error)
+      return res.status(HttpStatus.NOT_FOUND).json({
+        code: HttpStatus.NOT_FOUND,
+        message: error.message || 'User not found',
+        data: [],
+      });
+    }
+  }
+
   @Put('/edit-profile')
 @UseInterceptors(
   FileInterceptor('profileImg', {

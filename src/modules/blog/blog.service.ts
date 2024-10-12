@@ -97,20 +97,69 @@ export class BlogService {
     return blogs;
   }
 
-  async getBlog(blogSlug: string){
+  async getBlog(blogSlug: string, userSlug: string | null) {
+    const domain = this.configService.get<string>('domain');
+  
     const blog = await this.blogModel.findOne({
       where: { slug: blogSlug },
       include: [
         {
           model: User, // Include the user who posted the blog
-          attributes: ['fullName', 'email', 'profileImg'], // Include specific user attributes
+          attributes: ['fullName', 'email', 'profileImg', 'slug'], // Include specific user attributes
+        },
+        {
+          model: Comment, // Include all comments associated with the blog
+          include: [
+            {
+              model: User, // Include the user who posted each comment
+              attributes: ['fullName', 'profileImg'], // Include specific user attributes
+            },
+          ],
         },
       ],
     });
-    if(!blog){
+  
+    if (!blog) {
       throw new HttpException('Cannot find blog', HttpStatus.NOT_FOUND);
     }
-    return blog
+  
+    // Format media and profile images
+    blog.media = blog.media ? `${domain}${blog.media}` : null;
+    blog.user.profileImg = blog.user.profileImg ? `${domain}${blog.user.profileImg}` : null;
+  
+    // Map over comments to format user profile images
+    if (blog.comments) {
+      blog.comments = blog.comments.map(comment => {
+        comment.user.profileImg = comment.user.profileImg ? `${domain}${comment.user.profileImg}` : null;
+        return comment;
+      });
+    }
+  
+    // Check if the logged-in user is following the blog author
+    let followStatus = null; // Initialize follow status
+    if (userSlug) {
+      const following = await this.relationshipModel.findOne({
+        where: {
+          follower_id: userSlug,
+          followed_id: blog.user_slug, // Assuming user_slug is the slug of the blog author
+        },
+      });
+      
+      if (following) {
+        followStatus = 'following'; // The logged-in user is following the author
+      } else if (blog.user_slug === userSlug) {
+        followStatus = 'own'; // The logged-in user is the author
+      } else {
+        followStatus = 'not_following'; // The logged-in user is not following the author
+      }
+    } else {
+      followStatus = 'not_logged_in'; // User is not logged in
+    }
+  
+    return {
+      blog,
+      followStatus,
+    };
   }
 
 

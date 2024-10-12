@@ -262,6 +262,22 @@ export class UserService {
     };
   }
 
+  async getSelfInfo(userSlug: string){
+    let user = await this.userModel.findOne({
+      where: { slug: userSlug },
+      attributes: ['fullName', 'profileImg'],
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return {
+      fullName: user.fullName,
+      profileImg: user.profileImg
+    };
+  }
+
   async updateUserProfile(
     userSlug: string,
     updateData: { fullName?: string; profileImg?: string },
