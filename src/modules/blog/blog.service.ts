@@ -25,7 +25,9 @@ export class BlogService {
       user_slug: userSlug,
       media: mediaPath,
     });
-    blog.media = this.configService.get<string>('domain') + mediaPath;
+    if (blog.media) {
+      blog.media = this.configService.get<string>('domain') + mediaPath;
+    }
     return blog;
   }
 
@@ -105,7 +107,7 @@ export class BlogService {
 
   async getBlog(blogSlug: string, userSlug: string | null) {
     const domain = this.configService.get<string>('domain');
-  
+
     const blog = await this.blogModel.findOne({
       where: { slug: blogSlug },
       include: [
@@ -124,23 +126,27 @@ export class BlogService {
         },
       ],
     });
-  
+
     if (!blog) {
       throw new HttpException('Cannot find blog', HttpStatus.NOT_FOUND);
     }
-  
+
     // Format media and profile images
     blog.media = blog.media ? `${domain}${blog.media}` : null;
-    blog.user.profileImg = blog.user.profileImg ? `${domain}${blog.user.profileImg}` : null;
-  
+    blog.user.profileImg = blog.user.profileImg
+      ? `${domain}${blog.user.profileImg}`
+      : null;
+
     // Map over comments to format user profile images
     if (blog.comments) {
-      blog.comments = blog.comments.map(comment => {
-        comment.user.profileImg = comment.user.profileImg ? `${domain}${comment.user.profileImg}` : null;
+      blog.comments = blog.comments.map((comment) => {
+        comment.user.profileImg = comment.user.profileImg
+          ? `${domain}${comment.user.profileImg}`
+          : null;
         return comment;
       });
     }
-  
+
     // Check if the logged-in user is following the blog author
     let followStatus = null; // Initialize follow status
     if (userSlug) {
@@ -150,7 +156,7 @@ export class BlogService {
           followed_id: blog.user_slug, // Assuming user_slug is the slug of the blog author
         },
       });
-      
+
       if (following) {
         followStatus = 'following'; // The logged-in user is following the author
       } else if (blog.user_slug === userSlug) {
@@ -161,14 +167,12 @@ export class BlogService {
     } else {
       followStatus = 'not_logged_in'; // User is not logged in
     }
-  
+
     return {
       blog,
       followStatus,
     };
   }
-  
-  
 
   async getFollowedUsersBlogs(userSlug: string, page: number) {
     const limit = 5;
