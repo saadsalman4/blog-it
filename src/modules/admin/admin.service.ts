@@ -1,8 +1,13 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from '../user/user.model';
 import { Blog } from '../blog/blog.model';
+import { ApiToken } from '../api-token/api-token.model';
 import { Comment } from '../comment/comment.model';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
+
 
 @Injectable()
 export class AdminService {
@@ -10,7 +15,55 @@ export class AdminService {
     @InjectModel(User) private readonly userModel: typeof User,
     @InjectModel(Blog) private readonly blogModel: typeof Blog,
     @InjectModel(Comment) private readonly commentModel: typeof Comment,
+    @InjectModel(ApiToken) private readonly apiTokenModel: typeof ApiToken,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService
   ) {}
+
+
+  async login(email: string, password: string): Promise<any> {
+    const user = await this.userModel.findOne({ where: { email, role:'admin' } });
+    const secretKey = this.configService.get<string>('JWT_SECRET_KEY');
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid password');
+    }
+
+
+    const payload = { userSlug: user.slug, fullName: user.fullName };
+
+    const token = this.jwtService.sign(payload, {
+      secret: secretKey,
+      expiresIn: '24h',
+    });
+
+    await this.apiTokenModel.update(
+      { is_active: false },
+      { where: { user_slug: user.slug, is_active: true } },
+    );
+
+      await this.apiTokenModel.create({
+            api_token: token,
+            token_type: 'admin',
+            is_active: true,
+            user_slug: user.slug,
+          });
+
+    return {
+      code: 200,
+      message: 'Login successful',
+      data: {
+        email: user.email,
+        fullName: user.fullName,
+        token: token,
+      },
+    };
+  }
+
 
   // Block a user
   async blockUser(userSlug: string): Promise<any> {

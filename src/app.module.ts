@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -72,6 +72,10 @@ export class AppModule implements NestModule {
     consumer.apply(AuthMiddleware).forRoutes('relationships');
     consumer.apply(AuthMiddleware).forRoutes('user/edit-profile');
     consumer.apply(AuthMiddleware).forRoutes('user/logged-in-user');
-    consumer.apply(AdminAuthMiddleware).forRoutes('admin')
+    consumer
+      .apply(AdminAuthMiddleware)
+      .exclude({ path: 'admin/login', method: RequestMethod.POST })
+      .forRoutes('admin');
   }
 }
+
