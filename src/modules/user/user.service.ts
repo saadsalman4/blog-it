@@ -96,7 +96,7 @@ export class UserService {
   }
 
   async login(email: string, password: string): Promise<any> {
-    const user = await this.userModel.findOne({ where: { email } });
+    const user = await this.userModel.findOne({ where: { email, role:'user' } });
     const secretKey = this.configService.get<string>('JWT_SECRET_KEY');
     if (!user) {
       throw new NotFoundException('User not found');
@@ -152,22 +152,12 @@ export class UserService {
       { where: { user_slug: user.slug, is_active: true } },
     );
 
-    if(user.role=='user'){
       await this.apiTokenModel.create({
             api_token: token,
             token_type: 'user',
             is_active: true,
             user_slug: user.slug,
           });
-    }
-    else{
-      await this.apiTokenModel.create({
-        api_token: token,
-        token_type: 'admin',
-        is_active: true,
-        user_slug: user.slug,
-      });
-    }
 
     
 

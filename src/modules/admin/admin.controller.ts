@@ -1,9 +1,16 @@
 import { Body, Controller, Delete, HttpStatus, Param, Patch, Post, Res } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { LoginDto } from '../user/dto/login.dto';
 
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
+
+  @Post('login')
+  async login(@Body() loginDto: LoginDto) {
+      const { email, password } = loginDto;
+      return await this.adminService.login(email, password);
+  }
 
   // Block a user
   @Patch('block/:userSlug')
