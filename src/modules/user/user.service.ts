@@ -165,6 +165,7 @@ export class UserService {
       code: HttpStatus.OK,
       message: 'Login successful',
       data: {
+        slug: user.slug,
         email: user.email,
         fullName: user.fullName,
         token: token,
