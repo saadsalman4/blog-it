@@ -147,10 +147,12 @@ export class UserController {
     }
   }
 
-  @Get('/info/:userSlug')
-  async getUserInfo(@Param('userSlug') userSlug: string, @Res() res) {
+  @Get('/info/:slug')
+  async getUserInfo(@Param('slug') slug: string, @Res() res, @Req() req) {
     try {
-      const userInfo = await this.userService.getUserInfo(userSlug);
+      const user = req['user']
+
+      const userInfo = await this.userService.getUserInfo(slug, user.userSlug);
       return res.status(HttpStatus.OK).json({
         code: HttpStatus.OK,
         message: 'User info retrieved successfully',

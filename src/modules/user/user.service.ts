@@ -217,10 +217,10 @@ export class UserService {
     await this.sendOTP(email, otp);
   }
 
-  async getUserInfo(userSlug: string) {
+  async getUserInfo(slug: string, userSlug: string) {
     const domain = this.configService.get<string>('domain');
     let user = await this.userModel.findOne({
-      where: { slug: userSlug },
+      where: { slug: slug },
       attributes: ['fullName', 'profileImg'],
     });
 
@@ -230,13 +230,13 @@ export class UserService {
 
     const followersCount = await this.relationshipModel.count({
       where: {
-        followed_id: userSlug,
+        followed_id: slug,
       },
     });
 
     const followingCount = await this.relationshipModel.count({
       where: {
-        follower_id: userSlug,
+        follower_id: slug,
       },
     });
 
@@ -244,11 +244,32 @@ export class UserService {
       user.profileImg = `${domain}${user.profileImg}`;
     }
 
+    let followStatus = null; // Initialize follow status
+    if (userSlug) {
+      const following = await this.relationshipModel.findOne({
+        where: {
+          follower_id: userSlug,
+          followed_id: slug
+        },
+      });
+
+      if (following) {
+        followStatus = 'following'; // The logged-in user is following the author
+      } else if (slug === userSlug) {
+        followStatus = 'own'; // The logged-in user is the author
+      } else {
+        followStatus = 'not_following'; // The logged-in user is not following the author
+      }
+    } else {
+      followStatus = 'not_logged_in'; // User is not logged in
+    }
+
     return {
       fullName: user.fullName,
       profileImg: user.profileImg,
       followers: followersCount,
       following: followingCount,
+      followStatus
     };
   }
 
