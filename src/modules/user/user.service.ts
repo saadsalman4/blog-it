@@ -278,7 +278,7 @@ export class UserService {
     const domain = this.configService.get<string>('domain');
     let user = await this.userModel.findOne({
       where: { slug: userSlug },
-      attributes: ['fullName', 'profileImg'],
+      attributes: ['fullName', 'profileImg','slug'],
     });
 
     if (!user) {
@@ -291,7 +291,8 @@ export class UserService {
 
     return {
       fullName: user.fullName,
-      profileImg: user.profileImg
+      profileImg: user.profileImg,
+      slug : user.slug,
     };
   }
 
