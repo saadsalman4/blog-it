@@ -155,10 +155,26 @@ export class BlogService {
     } else {
       followStatus = 'not_logged_in'; // User is not logged in
     }
+
+    let votingStatus = 'no_vote';
+    if (userSlug) {
+      const vote = await this.voteModel.findOne({
+        where: { user_slug: userSlug, blog_slug: blogSlug },
+      });
+      if (vote) {
+        if(vote.type=='upvote'){
+          votingStatus='upvoted'
+        }
+        else{
+          votingStatus='downvoted'
+        }
+      }
+    }
   
     return {
       blog,
       followStatus,
+      votingStatus,
     };
   }
 
