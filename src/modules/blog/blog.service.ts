@@ -107,72 +107,78 @@ export class BlogService {
 
   async getBlog(blogSlug: string, userSlug: string | null) {
     const domain = this.configService.get<string>('domain');
-
+  
     const blog = await this.blogModel.findOne({
       where: { slug: blogSlug },
       include: [
         {
-          model: User, // Include the user who posted the blog
-          attributes: ['fullName', 'email', 'profileImg', 'slug'], // Include specific user attributes
+          model: User,
+          attributes: ['fullName', 'email', 'profileImg', 'slug'],
         },
         {
-          model: Comment, // Include all comments associated with the blog
+          model: Comment,
           include: [
             {
-              model: User, // Include the user who posted each comment
-              attributes: ['fullName', 'profileImg'], // Include specific user attributes
+              model: User,
+              attributes: ['fullName', 'profileImg'],
             },
           ],
         },
       ],
     });
-
+  
     if (!blog) {
       throw new HttpException('Cannot find blog', HttpStatus.NOT_FOUND);
     }
-
-    // Format media and profile images
+  
     blog.media = blog.media ? `${domain}${blog.media}` : null;
-    blog.user.profileImg = blog.user.profileImg
-      ? `${domain}${blog.user.profileImg}`
-      : null;
-
-    // Map over comments to format user profile images
+    blog.user.profileImg = blog.user.profileImg ? `${domain}${blog.user.profileImg}` : null;
+  
     if (blog.comments) {
       blog.comments = blog.comments.map((comment) => {
-        comment.user.profileImg = comment.user.profileImg
-          ? `${domain}${comment.user.profileImg}`
-          : null;
+        comment.user.profileImg = comment.user.profileImg ? `${domain}${comment.user.profileImg}` : null;
         return comment;
       });
     }
-
-    // Check if the logged-in user is following the blog author
-    let followStatus = null; // Initialize follow status
+  
+    let followStatus = null;
     if (userSlug) {
       const following = await this.relationshipModel.findOne({
-        where: {
-          follower_id: userSlug,
-          followed_id: blog.user_slug, // Assuming user_slug is the slug of the blog author
-        },
+        where: { follower_id: userSlug, followed_id: blog.user_slug },
       });
-
-      if (following) {
-        followStatus = 'following'; // The logged-in user is following the author
-      } else if (blog.user_slug === userSlug) {
-        followStatus = 'own'; // The logged-in user is the author
-      } else {
-        followStatus = 'not_following'; // The logged-in user is not following the author
-      }
+  
+      followStatus = following
+        ? 'following'
+        : blog.user_slug === userSlug
+        ? 'own'
+        : 'not_following';
     } else {
-      followStatus = 'not_logged_in'; // User is not logged in
+      followStatus = 'not_logged_in';
     }
-
+  
+    // Check for user's voting status on this blog
+    let votingStatus = 'no_vote';
+    if (userSlug) {
+      const vote = await this.voteModel.findOne({
+        where: { user_slug: userSlug, blog_slug: blogSlug },
+      });
+      if (vote) {
+        if(vote.type=='upvote'){
+          votingStatus='upvoted'
+        }
+        else{
+          votingStatus='downvoted'
+        }
+      }
+    }
+  
     return {
       blog,
       followStatus,
+      votingStatus,
     };
   }
+  
 
   async getFollowedUsersBlogs(userSlug: string, page: number) {
     const limit = 5;
