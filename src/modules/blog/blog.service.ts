@@ -111,6 +111,22 @@ export class BlogService {
   
     const blog = await this.blogModel.findOne({
       where: { slug: blogSlug },
+      attributes: {
+        include: [
+          [
+            this.voteModel.sequelize.literal(
+              `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote')`,
+            ),
+            'upvotes',
+          ],
+          [
+            this.voteModel.sequelize.literal(
+              `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+            ),
+            'downvotes',
+          ],
+        ],
+      },
       include: [
         {
           model: User,
