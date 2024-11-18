@@ -336,15 +336,15 @@ export class BlogService {
     try {
       const response = await groq.chat.completions.create({
         messages: [
-          {
-            role: "system",
-            content: "you are a helpful assistant. you should only give your response in text form",
-          },
-          {
-            role: "user",
-            content: `Please roast this blog in a humorous way:\n\n${blogContent}`,
-          },
-        ],
+  {
+    "role": "system",
+    "content": "You are a witty and sarcastic critic. Your role is to mercilessly roast blog content with humor and satire while maintaining a playful tone. Avoid any preambles or conclusions—just dive straight into the roast."
+  },
+  {
+    "role": "user",
+    "content": `Roast this blog content in a hilarious and critical way:\n\n${blogContent}`
+  }
+],
         model: "llama3-8b-8192",
         temperature: 0.5,
         max_tokens: 1024,
