@@ -103,17 +103,33 @@ export class BlogService {
   
     const blog = await this.blogModel.findOne({
       where: { slug: blogSlug },
+      attributes: {
+        include: [
+          [
+            this.voteModel.sequelize.literal(
+              `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote')`,
+            ),
+            'upvotes',
+          ],
+          [
+            this.voteModel.sequelize.literal(
+              `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+            ),
+            'downvotes',
+          ],
+        ],
+      },
       include: [
         {
-          model: User, // Include the user who posted the blog
-          attributes: ['fullName', 'email', 'profileImg', 'slug'], // Include specific user attributes
+          model: User,
+          attributes: ['fullName', 'email', 'profileImg', 'slug'],
         },
         {
-          model: Comment, // Include all comments associated with the blog
+          model: Comment,
           include: [
             {
-              model: User, // Include the user who posted each comment
-              attributes: ['fullName', 'profileImg'], // Include specific user attributes
+              model: User,
+              attributes: ['fullName', 'profileImg'],
             },
           ],
         },
