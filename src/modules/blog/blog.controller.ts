@@ -193,4 +193,22 @@ export class BlogController {
     return `${process.env.AZURE_BLOB_URL}/${process.env.AZURE_BLOB_CONTAINER_NAME}/${blobName}`;
   }
 
+  @Get('roast/:blogSlug')
+  async roastBlog(@Param('blogSlug') slug: string, @Res() res) {
+    try {
+      const { roast } = await this.blogService.roastBlog(slug);
+      return res.status(HttpStatus.OK).json({
+        code: HttpStatus.OK,
+        message: 'Successfully roasted blog',
+        data: { roast },
+      });
+    } catch (error) {
+      res.status(error.status || HttpStatus.INTERNAL_SERVER_ERROR).json({
+        code: error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message || 'Internal server error',
+        data: [],
+      });
+    }
+  }
+
 }

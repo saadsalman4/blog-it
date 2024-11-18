@@ -7,6 +7,7 @@ import { Vote } from '../vote/vote.model';
 import { Comment } from '../comment/comment.model';
 import { User } from '../user/user.model';
 import { Relationship } from '../relationship/relationship.model';
+import { Groq } from 'groq-sdk';
 
 @Injectable()
 export class BlogService {
@@ -297,5 +298,54 @@ export class BlogService {
 
 
     return blogs;
+  }
+
+  async roastBlog(blogSlug: string){
+    const blog = await this.blogModel.findOne({
+      where: { slug: blogSlug },
+      attributes: ['title', 'description', 'slug'], // Fetch only necessary fields
+    });
+    if (!blog) {
+      throw new HttpException('Blog not found', HttpStatus.NOT_FOUND);
+    }
+    // Step 2: Prepare the blog content
+    const blogContent = `
+      Title: ${blog.title}
+      Description: ${blog.description}
+    `;
+    // Step 3: Initialize the Groq client
+    const groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+    try {
+      const response = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: "you are a helpful assistant. you should only give your response in text form",
+          },
+          {
+            role: "user",
+            content: `Please roast this blog in a humorous way:\n\n${blogContent}`,
+          },
+        ],
+        model: "llama3-8b-8192",
+        temperature: 0.5,
+        max_tokens: 1024,
+        top_p: 1,
+        stop: null,
+        stream: false,
+      });
+      const roast = response?.choices?.[0]?.message || 'No roast available.';
+      console.log(roast)
+      // Step 5: Return the roast
+      return { roast };
+    } catch (error) {
+      throw new HttpException(
+        `Failed to generate roast: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  
   }
 }
