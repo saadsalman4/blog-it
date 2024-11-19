@@ -292,7 +292,7 @@ export class UserService {
       fullName: user.fullName,
       profileImg: user.profileImg,
       slug : user.slug,
-      role
+      role: user.role
     };
   }
 
