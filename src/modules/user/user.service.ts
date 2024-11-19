@@ -143,7 +143,6 @@ export class UserService {
 
     const token = this.jwtService.sign(payload, {
       secret: secretKey,
-      expiresIn: '24h',
     });
 
     await this.apiTokenModel.update(
