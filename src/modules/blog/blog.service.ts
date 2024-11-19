@@ -47,7 +47,7 @@ export class BlogService {
   }
 
   async getAllBlogs(page: number) {
-    const limit = 5;
+    const limit = 6;
     const offset = (page - 1) * limit;
     const domain = this.configService.get<string>('domain'); // Get domain from .env
 
@@ -198,7 +198,7 @@ export class BlogService {
   
 
   async getFollowedUsersBlogs(userSlug: string, page: number) {
-    const limit = 5;
+    const limit = 6;
     const offset = (page - 1) * limit;
     const domain = this.configService.get<string>('domain');
 
@@ -270,7 +270,7 @@ export class BlogService {
   }
 
   async getUserBlogs(userSlug: string, page: number) {
-    const limit = 5;
+    const limit = 6;
     const offset = (page - 1) * limit;
     const domain = this.configService.get<string>('domain'); // Get domain from .env
 
