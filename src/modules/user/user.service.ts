@@ -285,7 +285,8 @@ export class UserService {
     return {
       fullName: user.fullName,
       profileImg: user.profileImg,
-      slug: user.slug
+      slug: user.slug,
+      role
     };
   }
 
