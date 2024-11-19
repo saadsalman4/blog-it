@@ -275,7 +275,7 @@ export class UserService {
   async getSelfInfo(userSlug: string){
     let user = await this.userModel.findOne({
       where: { slug: userSlug },
-      attributes: ['fullName', 'profileImg', 'slug'],
+      attributes: ['fullName', 'profileImg', 'slug', 'role'],
     });
 
     if (!user) {
