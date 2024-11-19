@@ -29,7 +29,13 @@ import { AdminAuthMiddleware} from './middleware/admin_auth.middleware'
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    SequelizeModule.forRoot(sequelizeConfig),
+    SequelizeModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) =>
+        sequelizeConfig(configService),
+    }),
+    // SequelizeModule.forRoot(sequelizeConfig),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
