@@ -23,6 +23,7 @@ import { CommentService } from './modules/comment/comment.service';
 import { RelationshipModule } from './modules/relationship/relationship.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AdminAuthMiddleware} from './middleware/admin_auth.middleware'
+import { AppInsightsProvider } from './providers/app-insights.provider';
 
 @Module({
   imports: [
@@ -68,7 +69,9 @@ import { AdminAuthMiddleware} from './middleware/admin_auth.middleware'
     ApiTokenService,
     VoteService,
     CommentService,
+    AppInsightsProvider
   ],
+  exports: [AppInsightsProvider],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

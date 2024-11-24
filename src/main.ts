@@ -16,6 +16,15 @@ async function bootstrap() {
   // Use the custom validation exception filter globally
   app.useGlobalFilters(new ValidationExceptionFilter());
 
+  
+
+  app.enableCors({
+    origin: '*', // Allow all origins
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Allowed methods
+    allowedHeaders: 'Content-Type, Authorization, X-Requested-With, Accept', // Custom headers allowed
+    credentials: true, // Allow credentials (optional if needed)
+  });
+
   await app.listen(3000);
 }
 bootstrap();

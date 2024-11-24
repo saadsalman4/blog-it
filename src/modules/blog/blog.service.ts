@@ -47,7 +47,7 @@ export class BlogService {
   async getAllBlogs(page: number) {
     const limit = 6;
     const offset = (page - 1) * limit;
-    const domain = this.configService.get<string>('domain'); // Get domain from .env
+    // const domain = this.configService.get<string>('domain'); // Get domain from .env
 
     const blogs = await this.blogModel.findAll({
       attributes: [
@@ -99,7 +99,7 @@ export class BlogService {
   }
 
   async getBlog(blogSlug: string, userSlug: string | null) {
-    const domain = this.configService.get<string>('domain');
+    // const domain = this.configService.get<string>('domain');
   
     const blog = await this.blogModel.findOne({
       where: { slug: blogSlug },
@@ -141,13 +141,13 @@ export class BlogService {
     }
   
     // Format media and profile images
-    blog.media = blog.media ? `${domain}${blog.media}` : null;
-    blog.user.profileImg = blog.user.profileImg ? `${domain}${blog.user.profileImg}` : null;
+    // blog.media = blog.media ? `${domain}${blog.media}` : null;
+    // blog.user.profileImg = blog.user.profileImg ? `${domain}${blog.user.profileImg}` : null;
   
     // Map over comments to format user profile images
     if (blog.comments) {
       blog.comments = blog.comments.map(comment => {
-        comment.user.profileImg = comment.user.profileImg ? `${domain}${comment.user.profileImg}` : null;
+        // comment.user.profileImg = comment.user.profileImg ? `${domain}${comment.user.profileImg}` : null;
         return comment;
       });
     }

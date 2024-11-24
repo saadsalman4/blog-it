@@ -29,6 +29,7 @@
     "@nestjs/sequelize": "^10.0.1",
     "@nestjs/serve-static": "^4.0.2",
     "@types/multer": "^1.4.12",
+    "applicationinsights": "^3.4.0",
     "axios": "^1.7.7",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
