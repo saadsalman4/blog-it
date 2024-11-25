@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
   HttpStatus,
   HttpException,
+  Inject
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from './user.model';
@@ -18,7 +19,7 @@ import { ConfigService } from '@nestjs/config';
 import * as moment from 'moment';
 import { Relationship } from '../relationship/relationship.model';
 import axios from 'axios';
-const nodemailer = require('nodemailer');
+import * as appInsights from 'applicationinsights';
 
 @Injectable()
 export class UserService {
@@ -32,6 +33,7 @@ export class UserService {
     @InjectModel(ApiToken) private readonly apiTokenModel: typeof ApiToken,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @Inject('APP_INSIGHTS') private readonly appInsightsClient: appInsights.TelemetryClient,
   ) {}
 
   async signup(signupDto: SignupDto): Promise<void> {
@@ -317,14 +319,20 @@ export class UserService {
 
   async sendOTP(email: string, otp: string): Promise<any> {
     try {
-      const response = await axios.post(process.env.AZURE_MAIL_OTP_API, {
-          email: email,
-          otp: otp
+      const response = await axios.post(process.env.AZURE_MAIL_OTP_API, { email, otp });
+      
+      this.appInsightsClient.trackEvent({ name: 'sendOTPSuccess', properties: { email } });
+      console.log("Email OTP sent by Azure Function App")
+      
+      return response.data;
+    } catch (error) {
+      // Log the error in App Insights
+      this.appInsightsClient.trackException({
+        exception: error,
+        properties: { email },
       });
-
-      console.log('Response from Azure Function:', response.data);
-  } catch (error) {
-      console.error('Error calling Azure Function:', error.response ? error.response.data : error.message);
-  }
+      throw error; // Rethrow after logging
+    }
   }
 }
+

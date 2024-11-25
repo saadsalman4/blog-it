@@ -24,6 +24,7 @@ import { RelationshipModule } from './modules/relationship/relationship.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AdminAuthMiddleware} from './middleware/admin_auth.middleware'
 import { AppInsightsProvider } from './providers/app-insights.provider';
+import { UserService } from './modules/user/user.service';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { AppInsightsProvider } from './providers/app-insights.provider';
     ApiTokenService,
     VoteService,
     CommentService,
+    UserService,
     AppInsightsProvider
   ],
   exports: [AppInsightsProvider],

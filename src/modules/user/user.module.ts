@@ -7,6 +7,8 @@ import { UserOtp } from '../user-otp/user-otp.model';
 import { JwtModule } from '@nestjs/jwt';
 import { ApiToken } from '../api-token/api-token.model';
 import { Relationship } from '../relationship/relationship.model';
+import { AppInsightsModule } from '../application-insights/app-insights.module';
+import { AppInsightsProvider } from 'src/providers/app-insights.provider';
 
 @Module({
   imports: [
@@ -15,9 +17,10 @@ import { Relationship } from '../relationship/relationship.model';
       secret: process.env.JWT_SECRET_KEY,
       signOptions: { expiresIn: '24h' },
     }),
+    AppInsightsModule
   ],
-  exports: [SequelizeModule],
-  providers: [UserService],
+  exports: [SequelizeModule, UserService],
+  providers: [UserService, AppInsightsProvider],
   controllers: [UserController],
 })
 export class UserModule {}
