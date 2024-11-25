@@ -46,7 +46,7 @@ export class BlogController {
 
     let mediaUrl = null;
     if (file) {
-      mediaUrl = await this.uploadToAzureBlob(file);
+      mediaUrl = await this.uploadToAzureBlob(file, user.userSlug);
     }
 
     const blog = await this.blogService.createBlog(
@@ -171,7 +171,7 @@ export class BlogController {
   }
 
   
-  private async uploadToAzureBlob(file: Express.Multer.File): Promise<string> {
+  private async uploadToAzureBlob(file: Express.Multer.File, userSlug: string): Promise<string> {
     const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
     const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_BLOB_CONTAINER_NAME);
   
@@ -188,9 +188,23 @@ export class BlogController {
         blobContentType: contentType, // Ensure the Content-Type is set correctly
       },
     });
+
+    const appInsights = require('applicationinsights');
+    const blobUrl = `${process.env.AZURE_BLOB_URL}/${process.env.AZURE_BLOB_CONTAINER_NAME}/${blobName}`;
+    const client = appInsights.defaultClient;
+
+    client.trackEvent({
+      name: 'BlobUpload',
+      properties: {
+        blobUrl,
+        blobName,
+        userSlug, // Information about who uploaded the blob
+        contentType,
+      },
+    });
   
     // Return the URL to access the blob
-    return `${process.env.AZURE_BLOB_URL}/${process.env.AZURE_BLOB_CONTAINER_NAME}/${blobName}`;
+    return blobUrl;
   }
 
   @Get('roast/:blogSlug')
