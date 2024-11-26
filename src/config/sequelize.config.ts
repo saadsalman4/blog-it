@@ -12,7 +12,8 @@ export const sequelizeConfig = async (
   database: configService.get<string>('DB_NAME'),
   autoLoadModels: true,
   synchronize: configService.get<boolean>('DB_SYNC') || false, // Disable in production
-  logging: configService.get<string>('NODE_ENV') === 'development', // Enable in dev mode
+  // logging: configService.get<string>('NODE_ENV') === 'development', // Enable in dev mode
+  logging: false,
   dialectOptions: {
     encrypt: true, // Required for Azure SQL
     options: {
