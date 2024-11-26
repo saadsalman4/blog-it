@@ -47,8 +47,7 @@ export class BlogService {
   async getAllBlogs(page: number) {
     const limit = 6;
     const offset = (page - 1) * limit;
-    // const domain = this.configService.get<string>('domain'); // Get domain from .env
-
+  
     const blogs = await this.blogModel.findAll({
       attributes: [
         'slug',
@@ -58,26 +57,26 @@ export class BlogService {
         'user_slug',
         [
           this.voteModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote')`,
+            `(SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'upvote')`
           ),
           'upvotes',
         ],
         [
           this.voteModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+            `(SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'downvote')`
           ),
           'downvotes',
         ],
         [
           this.commentModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Comments\` WHERE \`Comments\`.\`blog_slug\` = \`Blog\`.\`slug\`)`,
+            `(SELECT COUNT(*) FROM [Comments] WHERE [Comments].[blog_slug] = [Blog].[slug])`
           ),
           'commentsCount',
         ],
         [
           this.voteModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote') -
-          (SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+            `(SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'upvote') -
+            (SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'downvote')`
           ),
           'ranking',
         ],
@@ -92,28 +91,24 @@ export class BlogService {
       limit,
       offset,
     });
-
-    
-
+  
     return blogs;
   }
 
   async getBlog(blogSlug: string, userSlug: string | null) {
-    // const domain = this.configService.get<string>('domain');
-  
     const blog = await this.blogModel.findOne({
       where: { slug: blogSlug },
       attributes: {
         include: [
           [
             this.voteModel.sequelize.literal(
-              `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote')`,
+              `(SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'upvote')`
             ),
             'upvotes',
           ],
           [
             this.voteModel.sequelize.literal(
-              `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+              `(SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'downvote')`
             ),
             'downvotes',
           ],
@@ -140,20 +135,15 @@ export class BlogService {
       throw new HttpException('Cannot find blog', HttpStatus.NOT_FOUND);
     }
   
-    // Format media and profile images
-    // blog.media = blog.media ? `${domain}${blog.media}` : null;
-    // blog.user.profileImg = blog.user.profileImg ? `${domain}${blog.user.profileImg}` : null;
-  
-    // Map over comments to format user profile images
+    // Format media and profile images if needed
     if (blog.comments) {
-      blog.comments = blog.comments.map(comment => {
-        // comment.user.profileImg = comment.user.profileImg ? `${domain}${comment.user.profileImg}` : null;
+      blog.comments = blog.comments.map((comment) => {
         return comment;
       });
     }
   
     // Check if the logged-in user is following the blog author
-    let followStatus = null; // Initialize follow status
+    let followStatus = null;
     if (userSlug) {
       const following = await this.relationshipModel.findOne({
         where: {
@@ -161,30 +151,26 @@ export class BlogService {
           followed_id: blog.user_slug, // Assuming user_slug is the slug of the blog author
         },
       });
-      
+  
       if (following) {
-        followStatus = 'following'; // The logged-in user is following the author
+        followStatus = 'following';
       } else if (blog.user_slug === userSlug) {
-        followStatus = 'own'; // The logged-in user is the author
+        followStatus = 'own';
       } else {
-        followStatus = 'not_following'; // The logged-in user is not following the author
+        followStatus = 'not_following';
       }
     } else {
-      followStatus = 'not_logged_in'; // User is not logged in
+      followStatus = 'not_logged_in';
     }
-
+  
+    // Determine voting status
     let votingStatus = 'no_vote';
     if (userSlug) {
       const vote = await this.voteModel.findOne({
         where: { user_slug: userSlug, blog_slug: blogSlug },
       });
       if (vote) {
-        if(vote.type=='upvote'){
-          votingStatus='upvoted'
-        }
-        else{
-          votingStatus='downvoted'
-        }
+        votingStatus = vote.type === 'upvote' ? 'upvoted' : 'downvoted';
       }
     }
   
@@ -194,22 +180,26 @@ export class BlogService {
       votingStatus,
     };
   }
+  
 
 
   async getFollowedUsersBlogs(userSlug: string, page: number) {
     const limit = 6;
     const offset = (page - 1) * limit;
-    const domain = this.configService.get<string>('domain');
-
+  
     // Get all followed users by the current user
     const followedUsers = await this.relationshipModel.findAll({
       where: { follower_id: userSlug },
       attributes: ['followed_id'],
     });
-
+  
     // Map the followed user IDs
     const followedIds = followedUsers.map((rel) => rel.followed_id);
-
+  
+    if (followedIds.length === 0) {
+      return []; // If no users are followed, return an empty array
+    }
+  
     // Fetch blogs by followed users with upvotes, downvotes, and comments count
     const blogs = await this.blogModel.findAll({
       where: {
@@ -223,26 +213,26 @@ export class BlogService {
         'user_slug',
         [
           this.voteModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote')`,
+            `(SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'upvote')`
           ),
           'upvotes',
         ],
         [
           this.voteModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+            `(SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'downvote')`
           ),
           'downvotes',
         ],
         [
           this.commentModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Comments\` WHERE \`Comments\`.\`blog_slug\` = \`Blog\`.\`slug\`)`,
+            `(SELECT COUNT(*) FROM [Comments] WHERE [Comments].[blog_slug] = [Blog].[slug])`
           ),
           'commentsCount',
         ],
         [
           this.voteModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote') - 
-             (SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+            `((SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'upvote') - 
+              (SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'downvote'))`
           ),
           'ranking',
         ],
@@ -257,16 +247,15 @@ export class BlogService {
       limit,
       offset,
     });
-
-
+  
     return blogs;
   }
+  
 
   async getUserBlogs(userSlug: string, page: number) {
     const limit = 6;
     const offset = (page - 1) * limit;
-    const domain = this.configService.get<string>('domain'); // Get domain from .env
-
+  
     const blogs = await this.blogModel.findAll({
       where: { user_slug: userSlug },
       attributes: [
@@ -277,26 +266,26 @@ export class BlogService {
         'user_slug',
         [
           this.voteModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote')`,
+            `(SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'upvote')`
           ),
           'upvotes',
         ],
         [
           this.voteModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+            `(SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'downvote')`
           ),
           'downvotes',
         ],
         [
           this.commentModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Comments\` WHERE \`Comments\`.\`blog_slug\` = \`Blog\`.\`slug\`)`,
+            `(SELECT COUNT(*) FROM [Comments] WHERE [Comments].[blog_slug] = [Blog].[slug])`
           ),
           'commentsCount',
         ],
         [
           this.voteModel.sequelize.literal(
-            `(SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'upvote') -
-          (SELECT COUNT(*) FROM \`Votes\` WHERE \`Votes\`.\`blog_slug\` = \`Blog\`.\`slug\` AND \`Votes\`.\`type\` = 'downvote')`,
+            `((SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'upvote') -
+             (SELECT COUNT(*) FROM [Votes] WHERE [Votes].[blog_slug] = [Blog].[slug] AND [Votes].[type] = 'downvote'))`
           ),
           'ranking',
         ],
@@ -311,10 +300,10 @@ export class BlogService {
       limit,
       offset,
     });
-
-
+  
     return blogs;
   }
+  
 
   async roastBlog(blogSlug: string){
     const blog = await this.blogModel.findOne({
