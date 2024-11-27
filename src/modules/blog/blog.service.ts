@@ -7,7 +7,7 @@ import { Vote } from '../vote/vote.model';
 import { Comment } from '../comment/comment.model';
 import { User } from '../user/user.model';
 import { Relationship } from '../relationship/relationship.model';
-import { Groq } from 'groq-sdk';
+import OpenAI from 'openai';
 
 @Injectable()
 export class BlogService {
@@ -305,45 +305,47 @@ export class BlogService {
   }
   
 
-  async roastBlog(blogSlug: string){
+  async roastBlog(blogSlug: string) {
     const blog = await this.blogModel.findOne({
       where: { slug: blogSlug },
       attributes: ['title', 'description', 'slug'], // Fetch only necessary fields
     });
+  
     if (!blog) {
       throw new HttpException('Blog not found', HttpStatus.NOT_FOUND);
     }
-    // Step 2: Prepare the blog content
+  
     const blogContent = `
       Title: ${blog.title}
       Description: ${blog.description}
     `;
-    // Step 3: Initialize the Groq client
-    const groq = new Groq({
-      apiKey: process.env.GROQ_API_KEY,
+  
+    // Initialize OpenAI with your API key
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY, // Make sure this environment variable is set
     });
+  
     try {
-      const response = await groq.chat.completions.create({
+      const response = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo', // Replace with your desired model (e.g., GPT-4, if supported)
         messages: [
-  {
-    "role": "system",
-    "content": "You are a witty and sarcastic critic. Your role is to mercilessly roast blog content with humor and satire while maintaining a playful tone. Avoid any preambles or conclusions—just dive straight into the roast."
-  },
-  {
-    "role": "user",
-    "content": `Roast this blog content in a hilarious and critical way:\n\n${blogContent}`
-  }
-],
-        model: "llama3-8b-8192",
+          {
+            role: 'system',
+            content:
+              'You are a witty and sarcastic critic. Your role is to mercilessly roast blog content with humor and satire while maintaining a playful tone. Avoid any preambles or conclusions—just dive straight into the roast.',
+          },
+          {
+            role: 'user',
+            content: `Roast this blog content in a hilarious and critical way:\n\n${blogContent}`,
+          },
+        ],
         temperature: 0.5,
         max_tokens: 1024,
-        top_p: 1,
-        stop: null,
-        stream: false,
       });
-      const roast = response?.choices?.[0]?.message || 'No roast available.';
-      console.log(roast)
-      // Step 5: Return the roast
+  
+      const roast = response.choices?.[0]?.message?.content || 'No roast available.';
+      console.log(roast);
+  
       return { roast };
     } catch (error) {
       throw new HttpException(
@@ -351,6 +353,5 @@ export class BlogService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-  
   }
 }
