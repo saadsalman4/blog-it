@@ -16,6 +16,7 @@ async function bootstrap() {
   // Use the custom validation exception filter globally
   app.useGlobalFilters(new ValidationExceptionFilter());
 
+  const port = process.env.PORT || 8080;
   
 
   app.enableCors({
@@ -25,6 +26,6 @@ async function bootstrap() {
     credentials: true, // Allow credentials (optional if needed)
   });
 
-  await app.listen(3000);
+  await app.listen(port);
 }
 bootstrap();
