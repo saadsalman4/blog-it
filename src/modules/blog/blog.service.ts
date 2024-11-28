@@ -7,7 +7,7 @@ import { Vote } from '../vote/vote.model';
 import { Comment } from '../comment/comment.model';
 import { User } from '../user/user.model';
 import { Relationship } from '../relationship/relationship.model';
-import OpenAI from 'openai';
+import axios from 'axios';
 
 @Injectable()
 export class BlogService {
@@ -306,52 +306,37 @@ export class BlogService {
   
 
   async roastBlog(blogSlug: string) {
+    // Step 1: Fetch the blog from the database
     const blog = await this.blogModel.findOne({
-      where: { slug: blogSlug },
-      attributes: ['title', 'description', 'slug'], // Fetch only necessary fields
+        where: { slug: blogSlug },
+        attributes: ['title', 'description', 'slug'], // Fetch only necessary fields
     });
-  
     if (!blog) {
-      throw new HttpException('Blog not found', HttpStatus.NOT_FOUND);
+        throw new HttpException('Blog not found', HttpStatus.NOT_FOUND);
     }
-  
+
+    // Step 2: Prepare the blog content
     const blogContent = `
       Title: ${blog.title}
       Description: ${blog.description}
     `;
-  
-    // Initialize OpenAI with your API key
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY, // Make sure this environment variable is set
-    });
-  
+
+    // Step 3: Call the Azure Function for Groq processing
+    const azureFunctionUrl = process.env.AZURE_FUNCTION_ROAST_URL; // Add this URL to your .env file
+
     try {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo', // Replace with your desired model (e.g., GPT-4, if supported)
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are a witty and sarcastic critic. Your role is to mercilessly roast blog content with humor and satire while maintaining a playful tone. Avoid any preambles or conclusions—just dive straight into the roast.',
-          },
-          {
-            role: 'user',
-            content: `Roast this blog content in a hilarious and critical way:\n\n${blogContent}`,
-          },
-        ],
-        temperature: 0.5,
-        max_tokens: 1024,
-      });
-  
-      const roast = response.choices?.[0]?.message?.content || 'No roast available.';
-      console.log(roast);
-  
-      return { roast };
+        const response = await axios.post(azureFunctionUrl, { blogContent });
+
+        if (response.status === 200 && response.data.roast) {
+            return { roast: response.data.roast };
+        } else {
+            throw new Error(response.data.error || 'Unknown error from Azure Function');
+        }
     } catch (error) {
-      throw new HttpException(
-        `Failed to generate roast: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+        throw new HttpException(
+            `Failed to generate roast: ${error.message}`,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+        );
     }
-  }
+}
 }
